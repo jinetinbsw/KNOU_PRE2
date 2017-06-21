@@ -1,0 +1,123 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.possys.drop_food_service.Drop_Mapper">
+	<!-- 일련번호 관련 -->
+	<select	id="s_Dnum" resultType="String">
+		select max(drop_id)
+				from drop_food
+	</select>
+	<!-- 폐기시 ep_order_food_details테이블에 빼고남은수 업데이트 // 폐기수정시-->
+	<update id="sub_ep_o_up" parameterType="java.util.Map">
+		update ep_order_food_details
+		set food_nowquantity = #{sub_ea}
+		where food_id = #{drop.food_id} and ep_order_id=#{drop.ep_order_id}
+	</update>
+	
+	<!-- 폐기 등록 화면 요청 -->
+	<select id="aj_drop_form" parameterType="java.util.Map" resultType="kr.or.possys.ep_order_food_details_service.Ep_Order">
+		select ep_order_food_details.food_id
+		,ep_order_id
+		,food_manage.food_name
+		,ep_order_wh_ea
+		,ep_order_wh_date
+		,ep_order_food_shelflife
+		,food_nowquantity
+		 from ep_order_food_details
+		 inner join food_manage
+		 on ep_order_food_details.food_id = food_manage.food_id
+		 where ep_order_food_details.food_id=#{food_id} and ep_order_id=#{ep_order_id}
+	
+	</select>
+	
+	<!-- 폐기 품목 입력 -->
+	<insert id="aj_insertdrop" parameterType="kr.or.possys.drop_food_service.Drop">
+		insert into drop_food( 
+		drop_id
+		,food_id
+		,drop_date
+		,drop_ea
+		,drop_reason
+		,staff_id
+		,ep_order_id)
+		value(
+		#{drop_id}
+		,#{food_id}
+		,sysdate()
+		,#{drop_ea}
+		,#{drop_reason}
+		,#{staff_id}
+		,#{ep_order_id}
+		)
+	</insert>
+	<!-- 폐기 품목 카운트 -->
+	<select id="getdropcount" resultType="int">
+		SELECT COUNT(*) FROM drop_food
+	</select>
+	<!-- 폐기 품목 목록 -->
+	<select id="droplist" parameterType="java.util.Map" resultType="kr.or.possys.drop_food_service.Drop">
+		select *
+		from drop_food
+		order by drop_date desc
+		limit #{beginRow}, #{pageRow}
+	</select>
+<!-- 	폐기 수정화면 -->
+	<select id="dropview" parameterType="string" resultType="kr.or.possys.drop_food_service.Drop">
+		select drop_id
+		,drop_food.food_id
+		,drop_date
+		,drop_ea
+		,drop_reason
+		,drop_food.staff_id
+		,drop_food.ep_order_id
+		,food_manage.food_name
+		,ep_order_food_details.food_nowquantity
+		from drop_food
+		inner join food_manage
+		on drop_food.food_id = food_manage.food_id
+		inner join ep_order_food_details
+		on drop_food.ep_order_id = ep_order_food_details.ep_order_id and drop_food.food_id = ep_order_food_details.food_id
+		where drop_id=#{drop_id}			
+	</select>
+		
+	<!-- 폐기 수정 -->
+	<update id="dropmodify" parameterType="kr.or.possys.drop_food_service.Drop">
+		update drop_food
+		set drop_ea = #{drop_ea}
+		,drop_reason = #{drop_reason}
+		,drop_date= sysdate()
+		where drop_id= #{drop_id}
+	</update>
+<!-- 폐기수정시 ep_order_food_details테이블에 빼고남은수 업데이트 //  --> 
+<!-- 	<update id="sangse_sub_ep_o_up" parameterType="java.util.Map"> -->
+<!-- 		update ep_order_food_details -->
+<!-- 		set ep_order_wh_ea = #{sub_ea} -->
+<!-- 		where food_id = #{drop.food_id} and ep_order_id=#{drop.ep_order_id} -->
+<!-- 	</update> -->
+
+	<!-- 폐기 삭제 / ep_order_food_details 테이블 수량 업데이트(최초 수량 복귀)-->
+	<delete id="aj_dropdelete" parameterType="string">
+		delete from drop_food where drop_id=#{drop_id}
+	</delete>
+	<update id="aj_drop_del_up" parameterType="java.util.Map">
+		update ep_order_food_details 
+		set food_nowquantity = #{re_dorder_wh_ea}
+		where ep_order_id = #{ep_order_id} and food_id=#{food_id}
+	</update>
+	
+	<!-- 폐기 검색 -->
+	<select id="dropsearch" parameterType="java.util.Map"  resultType="kr.or.possys.drop_food_service.Drop">
+		select *
+		from drop_food
+		where ${selbox} like concat('%',#{keyWord},'%')
+		order by drop_date desc
+		limit #{beginRow}, #{pageRow}
+	</select>
+	<!-- 폐기 검색 수 -->
+	<select id="dropSRlist" parameterType="java.util.Map" resultType="int">
+		select count(*) from drop_food where ${selbox} like concat('%',#{keyWord},'%')
+	</select>
+	
+	
+	
+</mapper>

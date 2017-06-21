@@ -1,0 +1,292 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.or.possys.Payment_service.Payment_Mapper">
+
+<!-- 주문목로페이지에서 주문번호를 클릭하는 경우 주문번호 결과를 내장한 채로 결제입력페이지로 이동하는 역할을 하는 쿼리 -->
+<select parameterType="String" resultType="String" id="bringToid">
+SELECT table_order_id FROM order_detail WHERE table_order_id = #{table_order_id} limit 1
+</select>
+
+<!-- 결제처리가 진행된 후에 회원정보테이블의 회원이 보유하고 있는 포인트를 비교하여 결제중에 적립예정? 마일리지가 확인되는 경우 해당분만큼 회원포인트에 가산해주는 내용 -->
+<update parameterType="java.util.Map" id="addMileage">
+<!-- UPDATE member,payment SET member.member_point = member.member_point + payment.payment_addmileage WHERE payment.member_phone = #{member_phone} AND member.member_phone = #{member_phone} AND payment.payment_id = #{payment_id} -->
+UPDATE member,payment SET member.member_point = member.member_point + payment.payment_addmileage WHERE payment.member_phone = #{member_phone} AND member.member_phone = #{member_phone} AND payment.table_order_id = #{table_order_id}
+</update>
+
+<!-- 결제처리가 진행된 후에 회원정보테이블의 회원이 보유하고 있는 포인트를 비교하여 결제중에 사용한 마일리지가 확인되는 경우 사용한 만큼 회원포인트에서 차감한다 -->
+<update parameterType="java.util.Map" id="subtractMileage">
+<!-- UPDATE member SET member_point = member_point - #{payment_usemileage} WHERE member_phone = #{member_phone} -->
+<!-- UPDATE member,payment SET member.member_point = member.member_point - payment.payment_usemileage WHERE payment.member_phone = #{member_phone} AND member.member_phone = #{member_phone} AND payment.payment_id = #{payment_id} -->
+UPDATE member,payment SET member.member_point = member.member_point - payment.payment_usemileage WHERE payment.member_phone = #{member_phone} AND member.member_phone = #{member_phone} AND payment.table_order_id = #{table_order_id}
+</update>
+
+<!-- 결제처리가 진행된 후에 주문상세테이블과 결제테이블의 테이블주문번호컬럼을 서로 비교해서 같은 값이 있으면 주문상세테이블의 order_detail_end테이블의 결과상태를 결제완료(T)로 바꿔주는 것 -->
+<update parameterType="String" id="updatePayment">
+UPDATE table_order SET table_order_end = 't' WHERE table_order_id = #{table_order_id}
+<!-- UPDATE order_detail, table_order SET order_detail.order_detail_end = 'T' AND table_order.table_order_end = 'T' WHERE table_order_id = #{table_order_id} -->
+</update>
+
+<!-- member테이블의 member_phone컬럼의 값을 바탕으로 하여 member_phone별로  member_point그룹별 합계값을 가져와서 payment_maxusemileage로삼는다.-->
+<select parameterType="String" resultType="int" id="bringMemberList">
+SELECT SUM(member_point) FROM member WHERE member_phone = #{member_phone} GROUP BY member_phone
+</select>
+
+<!-- order_detail테이블의 table_order_id컬럼의 값을 바탕으로 하여 table_order_id별로  order_detail_sum의 그룹별 합계금액을 가져와서 payment_total로 삼는다.-->
+<select parameterType="String" resultType="int" id="bringOrderList">
+SELECT SUM(order_detail_sum) FROM order_detail WHERE table_order_id = #{table_order_id} GROUP BY table_order_id
+</select>
+
+<!-- payment의 member_phone 컬럼의 값에 입력하기 전에 중복검사 -->
+<select parameterType="String" resultType="int" id="checkPMPhone">
+SELECT count(*) FROM member WHERE 1=1 AND member_phone = #{member_phone}
+</select>
+
+<!-- payment의 table_order_id 컬럼의 값에 입력하기 전에 중복검사 -->
+<select parameterType="String" resultType="int" id="checkToid">
+SELECT count(*) FROM order_detail WHERE 1=1 AND table_order_id = #{table_order_id}
+</select>
+
+<!-- 결제취소테이블에 결제취소로 분류된 결제내역을 추가해주고, 기존의 결제내역은 지운다 -->
+<delete parameterType="kr.or.possys.Payment_service.Payment" id="deletePayment"> 
+DELETE FROM payment WHERE payment_id = #{payment_id} 
+</delete>
+
+<!-- 그 외에 회원의 마일리지(포인트)를 조정하여야 하므로 삭제 이전에 마일리지를 조정해주는 쿼리도 작성한다. 주문테이블에서 주문상태가 t인 것을 f로 원복시켜놓기 -->
+
+<!-- 결제취소테이블에 해당 결제정보를 이관하는 것에 앞서서 우선적으로 해당 레코드의 결제상태값을 취소로 변경해준다 -->
+<update parameterType="kr.or.possys.Payment_service.Payment" id="paymentUpdate">
+<!-- UPDATE payment SET payment_state = '취소'
+WHERE payment_id = #{payment_id} -->
+UPDATE payment, table_order, member 
+SET payment.payment_state = '취소'
+, member.member_point = member.member_point - payment.payment_addmileage 
+, table_order.table_order_end = 'f' 
+WHERE payment_id =  #{payment_id}
+
+</update>
+
+
+ <!--  payment와 payment_check를 연결한다(payment의 결제상태가 결제취소이면 payment_cancel에 한 행씩 입력되도록 하는 내용 -->
+<!--  <insert parameterType="kr.or.possys.Payment_service.Payment" id="insertPaymentCancel"> -->
+<insert parameterType="java.util.Map" id="insertPaymentCancel">
+INSERT INTO payment_cancel(payment_cancel_id
+, payment_id
+  , table_order_id
+  , member_phone
+  , payment_cancel_total
+  , payment_cancel_pay
+  , payment_cancel_backmileage
+  , payment_cancel_returnmileage
+  , payment_cancel_date
+  , payment_cate)
+  
+  SELECT
+ concat('ABS',(select date_format(sysdate(),'%y%m%d%s')))
+  , payment_id
+  , table_order_id
+  , member_phone
+  , payment_total
+  , payment_pay
+  , payment_addmileage
+  , payment_usemileage
+  , payment_date
+  , payment_cate
+  FROM payment WHERE payment_id = #{payment_id} AND payment_state = '취소'
+  
+ <!--  INSERT INTO payment_cancel(payment_cancel_id
+, payment_id
+  , table_order_id
+  , member_phone
+  , payment_cancel_total
+  , payment_cancel_pay
+  , payment_cancel_backmileage
+  , payment_cancel_returnmileage
+  , payment_cancel_date
+  , payment_cate)
+  
+  SELECT
+ concat('ABS',(select date_format(sysdate(),'%y%m%d%s')))
+  , payment_id
+  , table_order_id
+  , member_phone
+  , payment_total
+  , payment_pay
+  , payment_addmileage
+  , payment_usemileage
+  , payment_date
+  , payment_cate
+  FROM payment WHERE #{payment_state}='취소' AND payment_id=#{payment_id}; -->
+</insert>
+
+<!-- payment 중복 체크 쿼리 만듦 -->
+<select id="check_pid" parameterType = "String" resultType="int">
+SELECT count(*) FROM payment WHERE 1=1 AND payment_id = #{payment_id}
+</select>
+
+<!-- <update parameterType="kr.or.possys.Payment_service.Payment" id="updatePayment"> 
+UPDATE payment SET payment_id = #{payment_id} , table_order_id = #{table_order_ID} 
+WHERE payment_id = #{payment_id}</update> -->
+
+<select id="paymentSRsearch" parameterType="java.util.Map" resultType="kr.or.possys.Payment_service.Payment">
+SELECT
+payment_id,
+table_order_id,
+payment_total,
+payment_pay,
+payment_date,
+payment_cate,
+payment_state 
+FROM payment
+WHERE ${select} LIKE CONCAT('%',#{keyWord},'%')
+ORDER BY payment_date DESC 
+LIMIT #{beginRow}, #{pagePerRow}
+</select>
+
+<!-- 결제목록 검색 수 -->
+<select id="paymentSRlist" parameterType="java.util.Map" resultType="int">
+	SELECT COUNT(*) FROM payment WHERE ${select} LIKE CONCAT('%',#{keyWord},'%')
+</select>
+
+<!-- 뷰파일로 DB에서 결제테이블 전체의 내용 가져오기 -->
+<select parameterType="String" id="getPayment" resultType="kr.or.possys.Payment_service.Payment"> 
+SELECT * FROM payment WHERE payment_id = #{payment_id}</select>
+
+<!-- 결제내역 리스트 화면에 표시할 내용 DB에서 가져오기 -->
+<select parameterType="java.util.Map" id="getPaymentList" resultType="kr.or.possys.Payment_service.Payment"> 
+SELECT 
+payment_id,
+table_order_id,
+payment_total,
+payment_pay,
+payment_date,
+payment_cate,
+payment_state 
+FROM payment 
+ORDER BY payment_date DESC LIMIT #{beginRow}, #{pagePerRow}
+</select>
+
+<!-- 결제내역 카운트 -->
+<select id="getPaymentCount" resultType="int"> 
+SELECT COUNT(*) FROM payment 
+</select>
+
+<!-- 결제목록 입력 -->
+ <insert parameterType="kr.or.possys.Payment_service.Payment" id="insertPayment">
+<!-- <insert id="kr.or.possys.Payment_service.Payment" parameterType="insertPayment">  -->
+INSERT IGNORE INTO payment(payment_id
+ , table_order_id 
+ , member_phone
+ , payment_total
+ , payment_pay
+ , payment_addmileage
+ , payment_usemileage
+ , payment_date
+ , payment_cate
+ , payment_state) 
+ 
+ SELECT 
+ concat('bo',(select date_format(sysdate(),'%y%m%d%s')))
+ , #{table_order_id}
+ , #{member_phone}
+ , #{payment_total}
+ , #{payment_pay}
+ , #{payment_addmileage}
+ , #{payment_usemileage}
+ , sysdate()
+ , #{payment_cate}
+ , '정상'
+ FROM table_order, member, order_detail
+ 
+ <!-- INSERT IGNORE INTO card(card_id
+ , payment_id
+ , card_app
+ , card_detail
+ , card_date
+ , card_company
+ , card_total
+ , card_price
+ , card_tax)
+ SELECT
+  #{card_id} 
+ , payment.payment_id
+ , #{card_app} 
+ , #{card_detail} 
+ , payment.payment_date
+ , #{card_company}
+ , #{payment_pay}
+ , #{card_price}
+ , #{card_tax}
+ FROM payment WHERE payment_cate='카드' AND payment_id = payment.payment_id AND payment_date = payment.payment_date; -->
+ 
+ <!-- INSERT IGNORE INTO card(card_id
+ , payment_id
+ , card_app
+ , card_detail
+ , card_date
+ , card_company
+ , card_total
+ , card_price
+ , card_tax)
+ SELECT
+  #{card_id} 
+ , payment.payment_id
+ , #{card_app} 
+ , #{card_detail} 
+ , #{card_date} 
+ , #{card_company}
+ , #{card_total}
+ , #{card_price}
+ , #{card_tax}
+ FROM payment WHERE payment_cate='카드' AND payment_id = payment.payment_id; -->
+ 
+ <!-- INSERT INTO payment(payment_id
+ , table_order_id 
+ , member_phone
+ , payment_total
+ , payment_pay
+ , payment_addmileage
+ , payment_usemileage
+ , payment_date
+ , payment_cate
+ , payment_state) 
+ 
+ VALUES(#{payment_id}
+ , #{table_order_id}
+ , #{member_phone}
+ , #{payment_total}
+ , #{payment_pay}
+ , #{payment_addmileage}
+ , #{payment_usemileage}
+ , #{payment_date}
+ , #{payment_cate}
+ , #{payment_state}) -->
+ 
+ 
+<!--  INSERT IGNORE INTO payment(payment_id
+ , table_order_id 
+ , member_phone
+ , payment_total
+ , payment_pay
+ , payment_addmileage
+ , payment_usemileage
+ , payment_date
+ , payment_cate
+ , payment_state) 
+ 
+ SELECT payment_id
+ , table_order_id
+ , member_phone 
+ , payment_total
+ , payment_pay 
+ , payment_addmileage
+ , payment_usemileage
+ , payment_date
+ , payment_cate
+ , payment_state
+ FROM payment WHERE NOT EXISTS(SELECT payment_state FROM payment WHERE #{payment_state} = '취소')
+ --> 
+ </insert>
+
+</mapper>

@@ -1,0 +1,84 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.possys.Menu_service.Menu_Mapper">
+	<!-- 식자재 품목 입력 -->
+	<insert id="insertmenu" parameterType="kr.or.possys.Menu_service.Menu">
+			insert into menu(
+		 menu_id
+		 ,menu_name
+		 ,menu_cate
+		 ,menu_price
+		 ,menu_sprice
+		 ,menu_sale
+		 ,menu_kcal
+		 ,menu_picture
+		 ,menu_explanation)		
+		select
+		concat('MN',(select date_format(sysdate(),'%y%m%d%s')))
+		,#{menu_name}	
+		,#{menu_cate}
+		,#{menu_price}
+		,#{menu_sprice}
+		,#{menu_sale}
+		,#{menu_kcal}
+		,#{menu_picture}
+		,#{menu_explanation}
+		</insert>
+		<select id="getmenucount" resultType="int">
+		SELECT COUNT(*) FROM menu
+	</select>
+		<select id="menulist" parameterType="java.util.Map" resultType="kr.or.possys.Menu_service.Menu">
+		select menu_id
+		,menu_name
+		,menu_cate
+		,menu_price
+		,menu_sprice
+		,menu_sale
+		,menu_kcal
+		,menu_picture
+		,menu_explanation	
+		from menu
+		order by menu_id desc
+		limit #{beginRow}, #{pageRow}
+	</select>
+	<select id="menuview" parameterType="string" resultType="kr.or.possys.Menu_service.Menu">
+		select *	
+		from menu where menu_id=#{menu_id}	
+	</select>
+	<!-- 메뉴 수정 -->
+	<update id="menumodify" parameterType="kr.or.possys.Menu_service.Menu">
+		update menu
+		set menu_name = #{menu_name}
+		,menu_cate= #{menu_cate}
+		,menu_price= #{menu_price}
+		,menu_sprice= #{menu_sprice}
+		,menu_kcal= #{menu_kcal}
+		where menu_id= #{menu_id}
+	</update>
+	<delete id="menudelete" parameterType="string">
+		delete from menu where menu_id=#{menu_id}
+	</delete>
+	<!-- 메뉴 검색 -->
+	<select id="menusearch" parameterType="java.util.Map"  resultType="kr.or.possys.Menu_service.Menu">
+		select menu_id
+		,menu_name
+		,menu_cate
+		,menu_price
+		,menu_sprice
+		,menu_sale
+		,menu_kcal
+		,menu_picture
+		,menu_explanation
+		from menu
+		where ${selbox} like concat('%',#{keyWord},'%')
+		order by menu_id desc
+		limit #{beginRow}, #{pageRow}
+	</select>
+	<!-- 메뉴 검색 수 -->
+	<select id="menuSRlist" parameterType="java.util.Map" resultType="int">
+		select count(*) from menu where ${selbox} like concat('%',#{keyWord},'%')
+	</select>
+	
+	
+</mapper>

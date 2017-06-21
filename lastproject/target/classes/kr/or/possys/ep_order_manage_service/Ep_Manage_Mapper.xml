@@ -1,0 +1,201 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.possys.ep_order_manage_service.Ep_Manage_Mapper">
+	<!-- 일련번호 관련 셋팅 -->
+	<select id="ep_mcount" resultType="int">
+		select count(*) from ep_order_manage
+	</select>
+	<select id="ep_Mnum" resultType="string">
+		select max(ep_id)
+			from ep_order_manage
+	</select>	
+	<!--@@@@@@ 업체 입력 id값 null -->
+	<insert id="insertep_m" parameterType="kr.or.possys.ep_order_manage_service.Ep_Manage">
+		insert into ep_order_manage(
+		ep_id
+		,food_id
+		,ep_phone
+		,ep_name		
+		,ep_director
+		,ep_address
+		,ep_text)
+		value(
+		#{ep_id}
+		,#{food_id}
+		,#{ep_phone}
+		,#{ep_name}
+		,#{ep_director}
+		,#{ep_address}
+		,#{ep_text}
+		)
+	</insert>
+							<!--@@@@@@ 업체 입력 id값 ok -->
+	<insert id="in_insertep_m" parameterType="kr.or.possys.ep_order_manage_service.Ep_Manage">
+		insert into ep_order_manage(
+		ep_id
+		,food_id
+		,ep_phone
+		,ep_name		
+		,ep_director
+		,ep_address
+		,ep_text)
+		value (
+		#{ep_id}
+		,#{food_id}
+		,#{ep_phone}
+		,#{ep_name}
+		,#{ep_director}
+		,#{ep_address}
+		,#{ep_text}
+		)
+	</insert>
+						<!--@@@@@@ 발주테이블에 업체정보 입력 id값 null [일련번호 입력받아 넘겨서 필요없어짐] --> 
+<!-- 	<insert id="insertep_o" parameterType="kr.or.possys.ep_order_manage_service.Ep_Manage"> -->
+<!-- 		insert into ep_order_food_details( -->
+<!-- 		ep_id -->
+<!-- 		,ep_order_id -->
+<!-- 		,food_id		 -->
+<!-- 		,ea_order_statement -->
+<!-- 		) -->
+<!-- 		select -->
+<!-- 		concat('EPMN',(select date_format(sysdate(),'%y%m%d%s'))) -->
+<!-- 		,'default' -->
+<!-- 		,#{food_id} -->
+<!-- 		,'미발주 상태' -->
+<!-- 	</insert> -->
+							<!--@@@@ 발주테이블에 업체정보 입력 id값 ok -->
+	<insert id="in_insertep_o" parameterType="kr.or.possys.ep_order_manage_service.Ep_Manage">
+		insert into ep_order_food_details(
+		ep_order_id
+		,food_id
+		,ep_id
+		,ea_order_statement
+		) values (
+		'default'
+		,#{food_id}
+		,#{ep_id}
+		,'미발주 상태'
+		)
+	</insert>
+					<!-- @@@@@ 업체 삭제시 발주테이블에 발주id값이 있나 확인할려고 하는 발주리스트 목록 불러오기 -->
+	<select id="chk_del" parameterType="string" resultType="kr.or.possys.ep_order_food_details_service.Ep_Order">
+		select * from ep_order_food_details where food_id = #{food_id}	
+	</select>
+	<select id="chk_alldel" parameterType="string" resultType="kr.or.possys.ep_order_food_details_service.Ep_Order">
+		select * from ep_order_food_details where ep_id = #{ep_id}		
+	</select>
+	
+	<!-- 업체 중복없이 카운트 -->
+		<select id="getep_mcount" resultType="int">
+			select count(distinct ep_name) from ep_order_manage
+		</select>
+	
+	<!-- 업체 카운트 -->
+<!-- 	<select id="getep_mcount" resultType="int"> -->
+<!-- 		SELECT COUNT(*) FROM ep_order_manage -->
+<!-- 	</select> -->
+	<!-- 업체 목록 중복없이 -->
+	<select id="ep_mlist" parameterType="java.util.Map" resultType="kr.or.possys.ep_order_manage_service.Ep_Manage">
+		select min(ep_id) as ep_id
+		, food_id
+		, ep_name
+		, ep_phone
+		, ep_director
+		, ep_address
+		, ep_text
+		from ep_order_manage
+		 group by ep_name
+		 order by ep_id desc limit #{beginRow},#{pageRow}
+	</select>
+	<!-- 업체 목록 -->
+<!-- 	<select id="ep_mlist" parameterType="java.util.Map" resultType="kr.or.possys.ep_order_manage_service.Ep_Manage"> -->
+<!-- 		select * -->
+<!-- 		from ep_order_manage -->
+<!-- 		order by ep_id desc -->
+<!-- 		limit #{beginRow}, #{pageRow} -->
+<!-- 	</select> -->
+	
+	<!-- 01_업체 수정화면 요청 및  검색 레코드중 1번째 레코드 출력 _ajax 등록화면 -->
+	<select id="ep_mview" parameterType="string" resultType="kr.or.possys.ep_order_manage_service.Ep_Manage">
+		select * from ep_order_manage where ep_id = #{ep_id} limit 1
+	</select>
+	<!-- 02_업체 수정화면 관련 식재료 요청 -->
+	<select id="ep_mview_fo" parameterType="string" resultType="kr.or.possys.ep_order_manage_service.Ep_Manage_fo_VO">
+		select ep_order_manage.ep_id
+		,ep_order_manage.food_id
+		,food_manage.food_name
+		from
+		ep_order_manage
+		inner join
+		food_manage
+		on
+		ep_order_manage.food_id = food_manage.food_id
+		where ep_id = #{ep_id}
+	</select>
+	
+	<!-- 업체 수정액션 -->
+	<update id="ep_mmodify" parameterType="kr.or.possys.ep_order_manage_service.Ep_Manage">
+		update ep_order_manage
+		set ep_phone= #{ep_phone}
+		,ep_director= #{ep_director}
+		,ep_address= #{ep_address}
+		,ep_text= #{ep_text}
+		where ep_id= #{ep_id}
+	</update>
+	<!-- 업체 삭제 -->
+	<delete id="ep_mdelete" parameterType="string">
+		delete from ep_order_manage where ep_id=#{ep_id}
+	</delete>
+	<!-- 업체관련 식자재 삭제 -->
+	<delete id="f_del" parameterType="string">
+		delete from ep_order_manage where food_id=#{food_id}
+	</delete>
+	<!-- 발주업체 디폴트id 삭제 -->
+	<delete id="f_del_o" parameterType="string">
+		delete from ep_order_food_details where food_id=#{food_id} and ep_order_id ='default'
+	</delete>
+	<delete id="f_del_oall" parameterType="java.util.Map">
+		delete from ep_order_food_details where ep_id=#{ep_id} and ep_order_id=#{ep_order_id}
+	</delete>
+	
+	<!-- 업체 검색 -->
+<!-- 	<select id="ep_msearch" parameterType="java.util.Map"  resultType="kr.or.possys.ep_order_manage_service.Ep_Manage"> -->
+<!-- 		select * -->
+<!-- 		from ep_order_manage -->
+<!-- 		where ${selbox} like concat('%',#{keyWord},'%') -->
+<!-- 		order by ep_id desc -->
+<!-- 		limit #{beginRow}, #{pageRow} -->
+<!-- 	</select> -->
+<!-- 업체 검색 수 -->
+<!-- 	<select id="ep_mSRlist" parameterType="java.util.Map" resultType="int"> -->
+<!-- 		select count(*) from ep_order_manage where ${selbox} like concat('%',#{keyWord},'%') -->
+<!-- 	</select> -->
+	<!-- @@@@ 업체 등록 폼 요청 -->
+	<select id="ep_chkadd" parameterType="string" resultType="kr.or.possys.food_service.Food">
+		select *
+		from food_manage  where food_id = #{food_id}
+	</select>
+<!-- 	@@@@ 업체 등록 폼 (업체 select 목록 요청) -->
+	<!-- 검색시 중복 데이터 중 하나씩 컬럼 값 가져오기 -->
+	<select id="ep_msel_list" resultType="kr.or.possys.ep_order_manage_service.Ep_Manage">
+		select min(ep_id) as ep_id
+		, ep_name
+		from ep_order_manage group by ep_name
+	</select>
+	
+<!-- //AJAX Mapper@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ -->
+	
+	<!-- 중복검사를 위한 count --> 
+	<select id="aj_food_chck"  parameterType="string" resultType="int">
+			SELECT COUNT(*) FROM ep_order_manage where food_id = #{food_id}
+	</select>
+	
+		
+									<!-- JOIN문 썼다가 폐기 -->
+<!-- 	<select id="ep_mview_fo" parameterType="string" resultType="kr.or.possys.ep_order_manage_service.Ep_Manage"> -->
+<!-- 		select ep_order_manage.*,food_manage.food_name -->
+<!-- 		from ep_order_manage inner join food_manage on ep_order_manage.food_id = food_manage.food_id -->
+<!-- 		where ep_id = #{ep_id} -->
+<!-- 	</select> -->
+</mapper>

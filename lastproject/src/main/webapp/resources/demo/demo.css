@@ -1,0 +1,31 @@
+* {
+	margin: 0;
+	padding: 0;
+}
+
+/* div Ω∫≈∏¿œ */
+.bg div {
+	float: left;
+	height: 300px;
+	width: 300px;
+	
+	border-style:outset;
+	
+	border-left-width: 5px; 
+	border-top-width:4px;
+	border-right-width:5px;
+	
+	border-color:transparent;
+	/*  padding: 10px; */
+	 margin: 10px;  
+	text-align: center;
+	/* opacity: 0.4; */
+}
+
+#content {
+	position: absolute;
+	top: 150px;
+	left: 20px;
+}
+
+

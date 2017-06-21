@@ -1,0 +1,117 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <mapper namespace="kr.or.possys.Cancel_Payment_service.Payment_Cancel_Mapper">
+  
+
+  <!-- <update parameterType="kr.or.possys.Payment_Cancel_service.PaymentCancel" id="updatePaymentCancel">
+	UPDATE payment_cancel SET payment_id = #{paymentId} , table_order_id = #{tableOrderId} , 
+	...
+	
+	WHERE payment_cancel_id = #{paymentCancelId}
+  </update> -->
+  
+  <!-- <delete parameterType="kr.or.possys.Payment_Cancel_service.PaymentCancel" id="deletePaymentCancel">
+  DELETE FROM payment_cancel WHERE payment_cancel_id = #{paymentCancelId};
+  
+  </delete> -->
+  
+  
+ <!--  payment와 payment_check를 연결한다(payment의 결제상태가 결제취소이면 payment_cancel에 한 행씩 입력되도록 하는 내용 -->
+<insert parameterType="kr.or.possys.Cancel_Payment_service.Payment_Cancel" id="insertPaymentCancel">
+INSERT IGNORE INTO payment_cancel(payment_cancel_id
+, payment_id
+  , table_order_id
+  , member_phone
+  , payment_cancel_total
+  , payment_cancel_pay
+  , payment_cancel_backmileage
+  , payment_cancel_returnmileage
+  , payment_cancel_date
+  , payment_cate)
+  
+  SELECT
+ concat('ABS',(select date_format(sysdate(),'%y%m%d%s')))
+  ,payment_id
+  , table_order_id
+  , member_phone
+  , payment_total
+  , payment_pay
+  , payment_addmileage
+  , payment_usemileage
+  , payment_date
+  , payment_cate
+  FROM payment WHERE payment_state='취소' AND payment_id=payment.payment_id;
+  
+</insert>
+  
+  
+  <!-- payment_cancel 중복 체크 쿼리를 만듦 -->
+  <select id="check_pcid" parameterType="String" resultType="int">
+  SELECT COUNT(*) FROM payment_cancel WHERE 1=1 AND payment_cancel_id = #{payment_cancel_id}
+  </select>
+  
+  <select parameterType="String" id="getPaymentCancel" resultType="kr.or.possys.Cancel_Payment_service.Payment_Cancel">
+  SELECT * FROM payment_cancel WHERE payment_cancel_id = #{payment_cancel_id}
+  </select>
+  
+  <select id="paymentCSRlist" parameterType="java.util.Map" resultType="int">
+  	SELECT COUNT(*) FROM payment_cancel WHERE ${select} LIKE CONCAT('%',#{keyWord},'%')
+  </select>
+  
+ <select id="paymentCSRsearch" parameterType="java.util.Map" resultType="kr.or.possys.Cancel_Payment_service.Payment_Cancel">
+	 SELECT
+	payment_cancel_id,
+	payment_id
+ 	, table_order_id
+ 	, payment_cancel_pay
+ 	, payment_cancel_total
+ 	, payment_cancel_date
+ 	, payment_cate
+	FROM payment_cancel
+	WHERE ${select} LIKE CONCAT('%',#{keyWord},'%')
+	ORDER BY payment_cancel_id DESC 
+	LIMIT #{beginRow}, #{pagePerRow}
+ </select>
+  
+  <select parameterType="java.util.Map" id="getPaymentCancelList" resultType="kr.or.possys.Cancel_Payment_service.Payment_Cancel">
+ 	SELECT payment_cancel_id
+ 	, payment_id
+ 	, table_order_id
+ 	, payment_cancel_pay
+ 	, payment_cancel_total
+ 	, payment_cancel_date
+ 	, payment_cate
+ 	 FROM payment_cancel ORDER BY payment_cancel_id DESC LIMIT #{beginRow} , #{pagePerRow}; 
+  </select>
+  
+  <select id="getPaymentCancelCount" resultType="int">
+  SELECT COUNT(*) FROM payment_cancel
+  </select>
+  
+ <!--  <insert parameterType="kr.or.possys.Cancel_Payment_service.Payment_Cancel" id="insertPaymentCancel">
+  INSERT INTO payment_cancel(payment_cancel_id
+  , payment_id
+  , table_order_id
+  , member_phone
+  , payment_cancel_total
+  , payment_cancel_pay
+  , payment_cancel_backmileage
+  , payment_cancel_returnmileage
+  , payment_cancel_date
+  , payment_cancel_cate)
+  
+  VALUES(#{payment_cancel_id}
+  , #{payment_id}
+  , #{table_order_id}
+  , #{member_phone}
+  , #{payment_cancel_total}
+  , #{payment_cancel_pay}
+  , #{payment_cancel_backmileage}
+  , #{payment_cancel_returnmileage}
+  , #{payment_cancel_date}
+  , #{payment_cancel_cate});
+  </insert>  -->
+  
+  </mapper>

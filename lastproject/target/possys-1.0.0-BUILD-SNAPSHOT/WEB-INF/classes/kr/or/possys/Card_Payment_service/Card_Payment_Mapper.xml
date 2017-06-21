@@ -1,0 +1,107 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <mapper namespace="kr.or.possys.Card_Payment_service.Card_Payment_Mapper">
+  
+  <!-- card_id 중복체크 -->
+  <select parameterType="String" resultType="int" id="check_cpid">
+  SELECT COUNT(*) FROM card WHERE 1=1 AND card_id = #{card_id} <!-- 쿼리 실행 결과값은 1 아니면 0이 출력됨 -->
+  </select>
+  
+  <update parameterType="kr.or.possys.Card_Payment_service.Card_Payment" id="updateCardPayment">
+  	UPDATE card SET card_id = #{card_id},
+  	payment_id = #{payment_id},
+  	card_app = #{card_app},
+  	card_detail = #{card_detail},
+  	card_date = #{card_date},
+  	card_company = #{card_company},
+  	card_total = #{card_total},
+  	card_price = #{card_price},
+  	card_tax = #{card_tax}
+	WHERE card_id = #{card_id}
+  </update>
+  
+<delete parameterType="kr.or.possys.Card_Payment_service.Card_Payment" id="deleteCardPayment"> 
+DELETE FROM card WHERE card_id = #{card_id} </delete>
+
+ <select id="CPSlist" parameterType="java.util.Map" resultType="int">
+  	SELECT COUNT(*) FROM card WHERE ${select} LIKE CONCAT('%',#{keyWord},'%')
+  </select>
+  
+ <select id="CPSsearch" parameterType="java.util.Map" resultType="kr.or.possys.Card_Payment_service.Card_Payment">
+	SELECT card_id
+	, payment_id
+	, card_app
+	, card_detail
+	, card_date
+	, card_company
+	, card_total
+	, card_price
+	, card_tax
+	FROM card
+	WHERE ${select} LIKE CONCAT('%',#{keyWord},'%')
+	ORDER BY card_id DESC 
+	LIMIT #{beginRow}, #{pagePerRow}
+ </select>
+
+<delete parameterType="kr.or.possys.Card_Payment_service.Card_Payment" id="deleteCard" >
+DELETE FROM card WHERE payment_id = #{payment_id}
+</delete>
+
+
+<select parameterType="String" id="getCardPayment" resultType="kr.or.possys.Card_Payment_service.Card_Payment"> 
+SELECT * FROM card WHERE card_id = #{card_id}</select>
+
+<select parameterType="java.util.Map" id="getCardPaymentList" resultType="kr.or.possys.Card_Payment_service.Card_Payment"> 
+SELECT card_id
+, payment_id
+, card_app
+, card_detail
+, card_date
+, card_company
+, card_total
+, card_price
+, card_tax
+FROM card ORDER BY card_id DESC LIMIT #{beginRow}, #{pagePerRow} </select>
+
+<select id="getCardPaymentCount" resultType="int"> SELECT COUNT(*) FROM card </select>
+
+ <insert parameterType="kr.or.possys.Card_Payment_service.Card_Payment" id="insertCardPayment">
+<!-- <insert id="kr.or.possys.Payment_service.Payment" parameterType="insertPayment">  -->
+ <!-- INSERT IGNORE INTO card(
+ card_id,
+ , payment_id
+ , card_date
+ , card_total
+ , card_price
+ , card_tax) 
+ SELECT 
+ concat('cd',(select date_format(sysdate(),'%y%m%d%s')))
+ , payment_id
+ , payment_date
+ , payment_pay
+ , payment_pay*10/11
+ , payment_pay*1/11
+ FROM payment WHERE payment.payment_cate='카드' AND payment_id = payment.payment_id -->
+ 
+ INSERT INTO card(card_id
+ , payment_id
+ , card_app
+ , card_detail
+ , card_date
+ , card_company
+ , card_total
+ , card_price
+ , card_tax) 
+ VALUES( #{card_id} 
+ , #{payment_id} 
+ , #{card_app} 
+ , #{card_detail} 
+ , #{card_date} 
+ , #{card_company}
+ , #{card_total}
+ , #{card_price}
+ , #{card_tax}) 
+ </insert>
+  </mapper>

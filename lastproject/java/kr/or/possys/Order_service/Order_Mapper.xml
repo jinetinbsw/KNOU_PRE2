@@ -1,0 +1,226 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.possys.Order_service.Order_Mapper">
+ 	<select id="order_list" resultType="kr.or.possys.Order_service.Order">
+		select table_order_id,
+		table_order_num,
+		table_order_end,
+		table_order_date 
+		from table_order
+	</select>
+	
+	 <select id="table_num_count" parameterType = "int" resultType="int">
+		select count(table_order_num)
+		from table_order
+		where table_order_num = #{table_order_num}
+		and table_order_end = 'f'
+	</select>
+
+ 	<select parameterType="java.util.Map" id="get_order_list" resultType="kr.or.possys.Order_service.Order"> 
+		select table_order_id,
+		table_order_num,
+		table_order_end,
+		table_order_date 
+		from table_order
+		ORDER BY table_order_id DESC LIMIT #{beginRow}, #{pagePerRow} 
+	</select>
+	
+	 	<select parameterType="java.util.Map" id="get_order_search_list" resultType="kr.or.possys.Order_service.Order"> 
+		select table_order_id,
+		table_order_num,
+		table_order_end,
+		table_order_date 
+		from table_order
+		where ${selbox} like concat('%',#{keyWord},'%')
+		ORDER BY table_order_id DESC LIMIT #{beginRow}, #{pagePerRow} 
+	</select>
+	
+ 	<select id="order_modify_form" parameterType = "String" resultType="kr.or.possys.Order_service.Order">
+		select table_order_id,
+		table_order_num,
+		table_order_end,
+		table_order_date 
+		from table_order
+		where table_order_id = #{table_order_id}
+	</select>
+	
+		<select id="get_order_count" resultType="int"> 
+		SELECT COUNT(*) FROM table_order 
+		</select>
+		
+		<select id="get_order_search_count" resultType="int"> 
+		SELECT COUNT(*) FROM table_order where ${selbox} like concat('%',#{keyWord},'%')
+		</select>
+	
+	 	<select id="order_detail" parameterType = "String" resultType="kr.or.possys.Order_service.Order">
+		select table_order_id,
+		menu_id,
+		menu_name,
+		order_detail_ea,
+		order_detail_sum,
+		order_detail_end,
+		order_detail_end_ea
+		from order_detail where table_order_id= #{table_order_id}
+		</select>
+		
+		<select id="get_price" parameterType = "String" resultType="String">
+		select
+		menu_price
+		from menu where menu_id= #{menu_id}
+		</select>
+		
+	<update id="order_end_t" parameterType="String">
+		update table_order
+		set table_order_end = 't'
+		where table_order_id = #{table_order_id}
+	</update>
+	
+	<update id="order_detail_end_t" parameterType="kr.or.possys.Order_service.Order">
+		update order_detail
+		set order_detail_end = 't',
+		order_detail_end_ea = #{order_detail_ea}
+		where table_order_id = #{table_order_id}
+		and menu_id = #{menu_id}
+	</update>
+	
+	<update id="order_detail_end_ea" parameterType="kr.or.possys.Order_service.Order">
+		update order_detail
+		set order_detail_end_ea = #{order_detail_end_ea}
+		where table_order_id = #{table_order_id}
+		and menu_id = #{menu_id}
+	</update>
+	
+	<update id="order_modify_action" parameterType="kr.or.possys.Order_service.Order">
+		update order_detail
+		set 
+		where table_order_id = #{table_order_id}
+	</update>
+	
+		<update id="order_detail_modify" parameterType="kr.or.possys.Order_service.Order">
+		update order_detail
+		set
+		menu_name = #{menu_name},
+		order_detail_ea = #{order_detail_ea},
+		order_detail_sum = #{order_detail_sum}
+		where table_order_id = #{table_order_id} and
+		menu_id = #{menu_id}
+		</update>
+		
+		<insert id="order_detail_insert" parameterType="kr.or.possys.Order_service.Order">
+		insert into order_detail(
+		table_order_id,
+		menu_id,
+		menu_name,
+		order_detail_ea,
+		order_detail_sum,
+		order_detail_end,
+		order_detail_end_ea)
+		values (
+		#{table_order_id},
+		#{menu_id},
+		#{menu_name},
+		#{order_detail_ea},
+		#{order_detail_sum},
+		#{order_detail_end},
+		#{order_detail_end_ea}
+		)
+		</insert>
+		
+		<insert id="order_insert" parameterType="kr.or.possys.Order_service.Order">
+		insert into table_order(
+		table_order_id,
+		table_order_num,
+		table_order_date
+		)
+		values (
+		#{table_order_id},
+		#{table_order_num},
+		sysdate()
+		)
+		</insert>
+		<delete id = "order_delete" parameterType = "String">
+		delete from table_order where table_order_id=#{table_order_id}
+		</delete>
+		
+		<delete id = "order_detail_delete" parameterType = "String">
+		delete from order_detail where table_order_id=#{table_order_id}
+		</delete>
+		
+		<select id="menu_list" resultType="kr.or.possys.Menu_service.Menu">
+		select menu_id
+		,menu_name
+		,menu_cate
+		,menu_price
+		,menu_sprice
+		,menu_sale
+		,menu_kcal
+		,newname
+		from menu
+		order by menu_id asc
+		</select>
+		
+		<select id="order_fpm" parameterType = "String" resultType="kr.or.possys.Order_service.Order">
+			select menu_id
+			,food_id
+			,menu_name
+			,fpm_ea
+			from food_per_menu 
+			where menu_id = #{menu_id}
+		</select>
+		
+		<select id="order_ep_order" parameterType = "String" resultType="kr.or.possys.Order_service.Order">
+			select ep_order_id
+			,food_id
+			,ep_order_food_shelflife
+			,food_nowquantity
+			from ep_order_food_details
+			where food_id = #{food_id}
+			order by ep_order_food_shelflife asc;
+		</select>
+		
+		<update id="order_ep_zero" parameterType="kr.or.possys.Order_service.Order">
+		update ep_order_food_details
+		set
+		food_nowquantity = 0,
+		ea_order_statement = '소진'
+		where ep_order_id = #{ep_order_id}
+		and food_id = #{food_id}
+		</update>
+		
+		<update id="order_ep_plus" parameterType="kr.or.possys.Order_service.Order">
+		update ep_order_food_details
+		set
+		food_nowquantity = #{food_sum}
+		where ep_order_id = #{ep_order_id}
+		and food_id = #{food_id}
+		</update>
+		
+		<select id="order_count" resultType="kr.or.possys.Order_service.Order">
+			select max(table_order_id) as order_count
+			from table_order
+		</select>
+		
+ 		<select id="order_fpm_all" resultType="kr.or.possys.Order_service.Order">
+		select menu.menu_id,
+		food_per_menu.food_id,
+		food_per_menu.fpm_ea
+		from menu,food_per_menu
+		where menu.menu_id = food_per_menu.menu_id
+		order by menu_id;
+		</select>
+		
+		<select id="order_nowquantity" parameterType = "String" resultType="kr.or.possys.Order_service.Order">
+		select 
+		SUM(food_nowquantity) as food_nowquantity
+		from ep_order_food_details
+		where food_id = #{food_id};
+		</select>
+		
+		<update id="order_cancel" parameterType="String">
+		update table_order
+		set table_order_end = 'c'
+		where table_order_id = #{table_order_id}
+		</update>
+		
+</mapper>

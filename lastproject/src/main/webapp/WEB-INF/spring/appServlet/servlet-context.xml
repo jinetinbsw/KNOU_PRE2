@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/mvc"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+	<!-- D1ispatcherServlet Context: defines this servlet's request-processing infrastructure -->
+	
+	<!-- Enables the Spring MVC @Controller programming model -->
+	<annotation-driven />
+
+	<!-- Handles HTTP GET requests for /resources/** by efficiently serving up static resources in the ${webappRoot}/resources directory -->
+	<resources mapping="/resources/**" location="/resources/" />
+
+	<!-- Resolves views selected for rendering by @Controllers to .jsp resources in the /WEB-INF/views directory -->
+	<beans:bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<beans:property name="prefix" value="/WEB-INF/views/" />
+		<beans:property name="suffix" value=".jsp" />
+	</beans:bean>
+    <!-- upload -->
+		<beans:bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<beans:property name="maxUploadSize">
+		<beans:value>102400000</beans:value>
+		</beans:property>
+		<beans:property name="defaultEncoding" value="UTF-8" />
+		</beans:bean>
+
+	<context:component-scan base-package="kr.or.possys" />
+	<!-- 커넥션 풀 설정 -->
+	 <beans:bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource">
+        <beans:property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+
+   	<!-- <beans:property name="url" value="jdbc:mysql://umj64-005.cafe24.com:3306/art9000?useUnicode=true&amp;characterEncoding=euckr"/>
+        <beans:property name="username" value="art9000"/>
+        <beans:property name="password" value="tkdgns12"/> -->
+
+		<beans:property name="url" value="jdbc:mysql://umj64-006.cafe24.com:3306/hummingbird26?useUnicode=true&amp;characterEncoding=euckr"/>
+ 	         <beans:property name="username" value="hummingbird26"/>
+ 	         <beans:property name="password" value="ruddls12!@"/> 
+     	</beans:bean>
+
+
+       	<!-- <beans:property name="url" value="jdbc:mysql://127.0.0.1:3308/dade?useUnicode=true&amp;characterEncoding=euckr&amp;allowMultiQueries=true"/> 
+       	<beans:property name="url" value="jdbc:mysql://127.0.0.1:3308/dade?useUnicode=true&amp;characterEncoding=euckr"/>
+	         <beans:property name="username" value="dadeid"/> 
+	         <beans:property name="password" value="dadepw"/>-->
+	         <!-- allowMultiQueries=true 는 mapper에서 다중 쿼리 제한을 뚫어주는 역할을 할 것이다? --> 
+  
+	<!-- mybatis설정 1. SqlSessionFactory -->
+    <beans:bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!-- mybatis 세션생성시 사용할 dataSource주입 -->
+        <beans:property name="dataSource" ref="dataSource" />
+        <!-- mybatis 세션생성후 쿼리를 실행시킬때 사용할 쿼리위치(메퍼)설정 -->
+        <beans:property name="mapperLocations">
+            <beans:list>
+            	<!-- 발주 관리 -->
+                <beans:value>classpath:kr/or/possys/food_service/Food_Mapper.xml</beans:value>
+                <beans:value>classpath:kr/or/possys/drop_food_service/Drop_Mapper.xml</beans:value>
+                <beans:value>classpath:kr/or/possys/ep_order_manage_service/Ep_Manage_Mapper.xml</beans:value>
+                <beans:value>classpath:kr/or/possys/ep_order_food_details_service/Ep_Order_Mapper.xml</beans:value>
+                <!-- 주문 관리 -->
+                <beans:value>classpath:kr/or/possys/Order_service/Order_Mapper.xml</beans:value>
+                <beans:value>classpath:kr/or/possys/Order_service/Order_Mapper.xml</beans:value>
+                <!-- 결제 관리 -->
+                <beans:value>classpath:kr/or/possys/Payment_service/Payment_Mapper.xml</beans:value>
+                <beans:value>classpath:kr/or/possys/Cancel_Payment_service/Payment_Cancel_Mapper.xml</beans:value>
+                <beans:value>classpath:kr/or/possys/Card_Payment_service/Card_Payment_Mapper.xml</beans:value>
+                <!-- 직원&로그인 -->
+                <beans:value>classpath:kr/or/possys/Staff_service/Staff_Mapper.xml</beans:value>
+                <beans:value>classpath:kr/or/possys/Member_sevice/Member_Mapper.xml</beans:value>
+                <beans:value>classpath:kr/or/possys/Member_sevice/Member_Mapper.xml</beans:value>
+                <!-- 메뉴 -->
+                <beans:value>classpath:kr/or/possys/Menu_service/Per_Mapper.xml</beans:value>
+               	<beans:value>classpath:kr/or/possys/Menu_service/Menu_Mapper.xml</beans:value>
+               	
+   		</beans:list>
+        </beans:property>
+	    </beans:bean>
+	    <!-- mybatis설정 2. SqlSessionTemplate-->
+	    <beans:bean id="sqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate">
+	        <beans:constructor-arg index="0" ref="sqlSessionFactory" />
+	    </beans:bean>
+<!-- 로그인 인터셉터 테스트 -->
+		<interceptors>
+		<interceptor>
+		<mapping path="/ho.html"/>
+		<mapping path="/real_time"/>
+		<mapping path="/member_select"/>
+		<mapping path="/member_list"/>
+		<mapping path="/member_information_view"/>
+		<mapping path="/member_Secede"/>
+		<mapping path="/member_update"/>
+		<mapping path="/test"/>
+		<mapping path="/logout"/>
+		<mapping path="/home"/>
+			<beans:bean class="kr.or.possys.Staff_service.Staff_interceptor"></beans:bean>
+		</interceptor>
+		</interceptors>	
+	<!-- 로그아웃 인터셉터(캐쉬날리기) -->
+	<interceptors>
+	<beans:bean id="webContentInterceptor" class="org.springframework.web.servlet.mvc.WebContentInterceptor">
+	        <beans:property name="cacheSeconds" value="0" />
+	        <beans:property name="useExpiresHeader" value="true" />
+	        <beans:property name="useCacheControlHeader" value="true" />
+	        <beans:property name="useCacheControlNoStore" value="true" />
+		<!--           예외처리 하여 캐쉬 적용이 가능 하다.
+		     <property name="cacheMappings">
+		                   <props>
+		                      <prop key="/test/test/**">86400</prop>
+		                   </props>
+		      </property>
+		--> 
+    	</beans:bean>
+		</interceptors>		
+
+</beans:beans>

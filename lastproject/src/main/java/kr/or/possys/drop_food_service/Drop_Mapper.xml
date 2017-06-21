@@ -1,0 +1,66 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.possys.drop_food_service.Drop_Mapper">
+	<!-- 폐기 품목 입력 -->
+	<insert id="insertdrop" parameterType="kr.or.possys.drop_food_service.Drop">
+		insert into drop_food( 
+		drop_id
+		,food_id
+		,drop_date
+		,drop_ea
+		,drop_reason
+		,staff_id)
+		select
+		concat('DN',(select date_format(sysdate(),'%y%m%d%s')))
+		,'food_id'
+		,sysdate()
+		,#{drop_ea}
+		,#{drop_reason}
+		,'staff'
+	</insert>
+	<!-- 폐기 품목 카운트 -->
+	<select id="getdropcount" resultType="int">
+		SELECT COUNT(*) FROM drop_food
+	</select>
+	<!-- 폐기 품목 목록 -->
+	<select id="droplist" parameterType="java.util.Map" resultType="kr.or.possys.drop_food_service.Drop">
+		select *
+		from drop_food
+		order by drop_date desc
+		limit #{beginRow}, #{pageRow}
+	</select>
+<!-- 	폐기 수정화면 -->
+	<select id="dropview" parameterType="string" resultType="kr.or.possys.drop_food_service.Drop">
+		select *
+		from drop_food where drop_id=#{drop_id}	
+	</select>
+	<!-- 식자재 수정 -->
+	<update id="dropmodify" parameterType="kr.or.possys.drop_food_service.Drop">
+		update drop_food
+		set drop_ea = #{drop_ea}
+		,drop_reason = #{drop_reason}
+		,staff_id = #{staff_id}
+		,drop_date= sysdate()
+		where drop_id= #{drop_id}
+	</update>
+	<!-- 폐기 삭제 -->
+	<delete id="dropdelete" parameterType="string">
+		delete from drop_food where drop_id=#{drop_id}
+	</delete>
+	<!-- 폐기 검색 -->
+	<select id="dropsearch" parameterType="java.util.Map"  resultType="kr.or.possys.drop_food_service.Drop">
+		select *
+		from drop_food
+		where ${selbox} like concat('%',#{keyWord},'%')
+		order by drop_date desc
+		limit #{beginRow}, #{pageRow}
+	</select>
+	<!-- 폐기 검색 수 -->
+	<select id="dropSRlist" parameterType="java.util.Map" resultType="int">
+		select count(*) from drop_food where ${selbox} like concat('%',#{keyWord},'%')
+	</select>
+	
+	
+	
+</mapper>
